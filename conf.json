@@ -1,0 +1,56 @@
+{
+    "TEMPLATEPATH":"./templateXNF.xlsm",
+    "FILENAME":"course.tCk_OP.tar.gz",
+    "ORIGINFOLDER":"./",
+    "UNCOMPRESSFOLDER":"./tmp",
+    "TARGETFOLDER":"./",
+    "TARGETNAME":"result.xlsm",
+    "DATOSGENERALES":{
+        "NAME":"A2",        
+        "DISPLAYNAME":"B2",
+        "STARTDATE":"C2",
+        "ENDDATE":"D2",
+        "LANGUAGE":"E2",
+        "TEACHERNAMES":"A4",        
+        "NUMBER":"C8",
+        "COURSEDESCRIPTION":"C4",
+        "COURSEPREREQUISITES":"D4",
+        "COURSEOBJETIVES":"E4",
+        "BIOSTARTINGROW":6
+    },
+    "UNIDADES":{"NOMBRESECCIONCOL":"C",
+                "NOMBRESUBSECCIONCOL":"E",
+                "TASKTYPECOL":"F",
+                "STARTDATECOL":"G",
+                "ENDDATECOL":"H"
+    },
+    "LECCION":{"NOMBRESECCIONCOL":"B",
+               "NOMBRESUBSECCIONCOL":"D",
+               "TITULOCOL":"F",
+               "OBJETIVOSCOL":"I",
+               "VIDEOCOL":"J",
+               "RESUMENCOL":"L",
+               "FORMULASECCIONCOL":"A",
+               "FORMULASUBSECCIONCOL":"C",
+               "FORMULALESSONCOL":"E",
+               "FORMULACONCATCOL":"O",
+               "TABLEDEF":"A1:P"
+    },
+    "PROBLEMAS":{"ANSWERCOLS":["P","R","T","V","X"],
+                "ENUNCIADOCOL":"M",
+                "TIPOCOL":"L",
+                "CORRECTCOL":"O",
+                "SHOWANSWERCOL":"H",
+                "NOMBRESECCIONCOL":"B",
+                "NOMBRESUBSECCIONCOL":"D",
+                "TITULOCOL":"F",
+                "MAXATTEMPTSCOL":"G",
+                "WEIGHTCOL":"I",
+                "FORMULASECCIONCOL":"A",
+                "FORMULASUBSECCIONCOL":"C",
+                "FORMULALESSONCOL":"E",
+                "TABLEDEF":"A1:Y"
+    }
+}
+
+
