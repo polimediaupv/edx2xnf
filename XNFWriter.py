@@ -11,7 +11,7 @@ import shutil
 import datetime
 from lxml import etree,html
 import argparse
-from dateutil import parser
+from dateutil import parser as dateparser
 import pdb
 import tarfile
 import openpyxl
@@ -44,8 +44,9 @@ def updateDatosgenerales(originFolder,course_attributes,cfg,wb):
     if 'course' in course_attributes:
         wb['DatosGenerales'][cfg["DATOSGENERALES"]["NAME"]] = course_attributes['course']        
     if 'start' in course_attributes:
-        #maybe need to format start date               
-        startdate = parser.parse(course_attributes['start'].replace('"',''))
+        #maybe need to format start date     
+        pdb.set_trace()          
+        startdate = dateparser.parse(course_attributes['start'].replace('"',''))
         wb['DatosGenerales'][cfg["DATOSGENERALES"]["STARTDATE"]].value = datetime.datetime.strptime(startdate.strftime("%d/%m/%Y"), "%d/%m/%Y")
     if 'display_name' in course_attributes:
         wb['DatosGenerales'][cfg["DATOSGENERALES"]["DISPLAYNAME"]].value = course_attributes['display_name']
@@ -171,12 +172,12 @@ def writeSequential(originFolder,attributes,cfg,wb,chapterAttrib,numChapter,numS
     wb['Unidades'][cfg["UNIDADES"]['NOMBRESECCIONCOL'] + unicode(row)]=chapterAttrib['display_name']
     wb['Unidades'][cfg["UNIDADES"]['NOMBRESUBSECCIONCOL']+ unicode(row)]=sequentialXML.attrib['display_name']
     if 'start' in chapterAttrib:
-        startdate = parser.parse(chapterAttrib['start'])                
+        startdate = dateparser.parse(chapterAttrib['start'])                
         wb['Unidades'][cfg["UNIDADES"]['STARTDATECOL']+ unicode(row)].value =datetime.datetime.strptime(startdate.strftime("%d/%m/%Y"), "%d/%m/%Y")
     else:
         wb['Unidades'][cfg["UNIDADES"]['STARTDATECOL']+ unicode(row)]=''
     if 'end' in chapterAttrib:
-        enddate = parser.parse(chapterAttrib['end'])
+        enddate = dateparser.parse(chapterAttrib['end'])
         wb['Unidades'][cfg["UNIDADES"]['ENDDATECOL']+ unicode(row)].value = datetime.datetime.strptime(enddate.strftime("%d/%m/%Y"), "%d/%m/%Y")
     else:
         wb['Unidades'][cfg["UNIDADES"]['ENDDATECOL']+ unicode(row)]=''
