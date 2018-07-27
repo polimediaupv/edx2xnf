@@ -44,8 +44,7 @@ def updateDatosgenerales(originFolder,course_attributes,cfg,wb):
     if 'course' in course_attributes:
         wb['DatosGenerales'][cfg["DATOSGENERALES"]["NAME"]] = course_attributes['course']        
     if 'start' in course_attributes:
-        #maybe need to format start date     
-        pdb.set_trace()          
+        #maybe need to format start date             
         startdate = dateparser.parse(course_attributes['start'].replace('"',''))
         wb['DatosGenerales'][cfg["DATOSGENERALES"]["STARTDATE"]].value = datetime.datetime.strptime(startdate.strftime("%d/%m/%Y"), "%d/%m/%Y")
     if 'display_name' in course_attributes:
