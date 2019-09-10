@@ -155,8 +155,8 @@ def writeproblem(originFolder,cfg,wb,attributes,lesson):
     wb['Problemas'][cfg["PROBLEMAS"]['FORMULALESSONCOL'] + unicode(problemRow)].value=u'=INDEX(Leccion[],MATCH(Problemas[[#This Row],[Lecci\xf3n]],Leccion[selectorLeccion],0),5)'
 
     wb['Problemas']._tables[0].ref = cfg["PROBLEMAS"]['TABLEDEF'] + unicode(problemRow)      
-    for val in wb['Problemas'].data_validations.dataValidation:
-        val.sqref=val.sqref[:1]+'2:'+val.sqref[:1]+unicode(problemRow)        
+    for val in wb['Problemas'].data_validations.dataValidation:        
+        val.sqref=openpyxl.worksheet.cell_range.MultiCellRange([unicode(val.sqref)[:1]+'2:'+unicode(val.sqref)[:1]+unicode(problemRow)])       
     return wb
     
 
@@ -170,13 +170,13 @@ def writeSequential(originFolder,attributes,cfg,wb,chapterAttrib,numChapter,numS
     sequentialXML =etree.parse(originFolder+'/sequential/'+attributes['url_name']+'.xml').getroot()
     wb['Unidades'][cfg["UNIDADES"]['NOMBRESECCIONCOL'] + unicode(row)]=chapterAttrib['display_name']
     wb['Unidades'][cfg["UNIDADES"]['NOMBRESUBSECCIONCOL']+ unicode(row)]=sequentialXML.attrib['display_name']
-    if 'start' in chapterAttrib:
-        startdate = dateparser.parse(chapterAttrib['start'])                
+    if 'start' in chapterAttrib:        
+        startdate =  dateparser.parse(chapterAttrib['start'].replace('"',''))                      
         wb['Unidades'][cfg["UNIDADES"]['STARTDATECOL']+ unicode(row)].value =datetime.datetime.strptime(startdate.strftime("%d/%m/%Y"), "%d/%m/%Y")
     else:
         wb['Unidades'][cfg["UNIDADES"]['STARTDATECOL']+ unicode(row)]=''
     if 'end' in chapterAttrib:
-        enddate = dateparser.parse(chapterAttrib['end'])
+        enddate =  dateparser.parse(chapterAttrib['end'].replace('"',''))
         wb['Unidades'][cfg["UNIDADES"]['ENDDATECOL']+ unicode(row)].value = datetime.datetime.strptime(enddate.strftime("%d/%m/%Y"), "%d/%m/%Y")
     else:
         wb['Unidades'][cfg["UNIDADES"]['ENDDATECOL']+ unicode(row)]=''
@@ -264,7 +264,7 @@ def writeSequential(originFolder,attributes,cfg,wb,chapterAttrib,numChapter,numS
     wb['Leccion']._tables[0].ref = cfg['LECCION']['TABLEDEF'] + unicode(lessonRow)   
     
     for val in wb['Leccion'].data_validations.dataValidation:
-        val.sqref=val.sqref[:1]+'2:'+val.sqref[:1]+unicode(lessonRow)        
+        val.sqref=openpyxl.worksheet.cell_range.MultiCellRange([unicode(val.sqref)[:1]+'2:'+unicode(val.sqref)[:1]+unicode(lessonRow)])        
     return wb
 
 def updateUnidades(originFolder,attributes,cfg,wb):
