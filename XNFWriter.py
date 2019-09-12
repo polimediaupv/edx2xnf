@@ -21,7 +21,8 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 def untar(cfg):    
-    shutil.rmtree(cfg['UNCOMPRESSFOLDER'])
+    if os.path.isdir(cfg['UNCOMPRESSFOLDER']):
+        shutil.rmtree(cfg['UNCOMPRESSFOLDER'])    
     tar = tarfile.open(cfg['ORIGINFOLDER']+cfg['FILENAME'])    
     tar.extractall(cfg['UNCOMPRESSFOLDER'])
     coursefoldername = tar.getmembers()[0].name
@@ -186,69 +187,93 @@ def writeSequential(originFolder,attributes,cfg,wb,chapterAttrib,numChapter,numS
     wb['Unidades']._tables[0].ref = 'A1:L' + unicode(row)   
     #we copy the formulas
     if row > 2:
-        #pdb.set_trace()
         wb['Unidades']['B' + unicode(row)].value = '=IFERROR(IF(C'+ unicode(row-1)+ '=C'+ unicode(row)+ ',B'+ unicode(row-1)+ ',B'+ unicode(row-1)+ '+1),1)'
         wb['Unidades']['D' + unicode(row)].value = '=IF(B'+ unicode(row)+ '=B'+ unicode(row-1)+ ',D'+ unicode(row-1)+ '+1,1)'
         wb['Unidades']['K' + unicode(row)].value = wb['Unidades']['K2'].value
         wb['Unidades']['L' + unicode(row)].value = wb['Unidades']['L2'].value
-        #pdb.set_trace()
     #this calls updateLesson
-    lesson = {"seccion":unicode(numChapter)+":"+chapterAttrib['display_name'],
-            "subseccion":unicode(numChapter)+":"+unicode(numSequential)+":"+sequentialXML.attrib['display_name'],            
+
+    lessonTemplate = {"seccion":unicode(numChapter)+":"+chapterAttrib['display_name'],
+            "subseccion":unicode(numChapter)+":"+unicode(numSequential)+":"+sequentialXML.attrib['display_name'],  
+            "lesson":"",          
             "titulo":"",
             "objetivos":"",
             "video":"",
             "resumen":"",
             "forum":""
     }
-    lessonNumber = 1
-    for vertical in sequentialXML.cssselect('vertical'):                
-        verticalXML =etree.parse(originFolder+'/vertical/'+vertical.attrib['url_name']+'.xml').getroot()                
-        if 'display_name' in verticalXML.attrib:            
-            if lesson['titulo']!='' and lesson['titulo']!= verticalXML.attrib['display_name'] and verticalXML.attrib['display_name']!='':                
-                if wb['Leccion'].max_row==2 and wb['Leccion']['B2'].value==None:
-                    lessonRow=2
-                else:
-                    lessonRow = wb['Leccion'].max_row +1 
-                
-                wb['Leccion'][cfg['LECCION']['NOMBRESECCIONCOL'] + unicode(lessonRow)].value=lesson['seccion']
-                wb['Leccion'][cfg['LECCION']['NOMBRESUBSECCIONCOL'] + unicode(lessonRow)].value=lesson['subseccion']
-                wb['Leccion'][cfg['LECCION']['TITULOCOL'] + unicode(lessonRow)].value=lesson['titulo']
-                wb['Leccion'][cfg['LECCION']['OBJETIVOSCOL'] + unicode(lessonRow)].value=lesson['objetivos']
-                wb['Leccion'][cfg['LECCION']['VIDEOCOL'] + unicode(lessonRow)].value=lesson['video']
-                wb['Leccion'][cfg['LECCION']['RESUMENCOL'] + unicode(lessonRow)].value=lesson['resumen']
-                #copy the formulas    
-                wb['Leccion'][cfg['LECCION']['FORMULASECCIONCOL'] + unicode(lessonRow)].value=u'=INDEX(Unidades[],MATCH(Leccion[[#This Row],[Secci\xf3n]],Unidades[selectorSeccion],0),2)'
-                wb['Leccion'][cfg['LECCION']['FORMULASUBSECCIONCOL'] + unicode(lessonRow)].value=u'=INDEX(Unidades[],MATCH(Leccion[[#This Row],[SubSecci\xf3n]],Unidades[selectorSubSeccion],0),4)'
-                wb['Leccion'][cfg['LECCION']['FORMULALESSONCOL'] + unicode(lessonRow)].value='=IFERROR((IF(AND(A' + unicode(lessonRow-1) + '=A' + unicode(lessonRow) + ',C' + unicode(lessonRow-1) + '=C' + unicode(lessonRow) + '),E' + unicode(lessonRow-1) + '+1,1)),"")'
-                wb['Leccion'][cfg['LECCION']['FORMULACONCATCOL'] + unicode(lessonRow)].value=u'=CONCATENATE(INDIRECT("Leccion[idSeccion]"),":",INDIRECT("Leccion[idSubSeccion]"),":",INDIRECT("Leccion[Lecci\xf3n]"),":",INDIRECT("Leccion[Titulo]"))'
 
-                wb['Leccion']._tables[0].ref = cfg['LECCION']['TABLEDEF'] + unicode(lessonRow)   
-                lessonNumber+=1
+    lessonNumber = None
+    lesson = dict(lessonTemplate)
+    for vertical in sequentialXML.cssselect('vertical'):          
+        verticalXML =etree.parse(originFolder+'/vertical/'+vertical.attrib['url_name']+'.xml').getroot()     
+        newlesson=False
+        for child in verticalXML.getchildren():                
+            if child.tag=="html" or child.tag=="video":           
+                newlesson = True
 
-            lesson['titulo']= verticalXML.attrib['display_name']
-            lesson["lesson"]=unicode(numChapter)+":"+unicode(numSequential)+":" + unicode(lessonNumber) + ":"+lesson['titulo']
-            for child in verticalXML.getchildren():                
-                if child.tag=="html":
-                    htmlFiletext = open(originFolder+'/html/'+child.attrib['url_name']+'.html', 'r').read() 
-                    if lesson['video']!="":
+        if newlesson:            
+            if lesson != lessonTemplate:
+                lesson["lesson"]=unicode(numChapter)+":"+unicode(numSequential)+":" + unicode(lessonNumber) + ":"+lesson['titulo']
+                writeLesson(lesson,cfg,wb)                                
+            lesson = dict(lessonTemplate)             
+            if lessonNumber is None:
+                lessonNumber = 1
+            else:
+                lessonNumber += 1
+
+        if 'display_name' in verticalXML.attrib and lesson['titulo']=='':            
+            lesson['titulo']=verticalXML.attrib['display_name']
+            #esto hacerlo justo antes de escribir
+            #lesson["lesson"]=unicode(numChapter)+":"+unicode(numSequential)+":" + unicode(lessonNumber) + ":"+lesson['titulo']
+       
+        for child in verticalXML.getchildren():                
+            if child.tag=="html":
+                htmlFiletext = open(originFolder+'/html/'+child.attrib['url_name']+'.html', 'r').read() 
+                if lesson['video']!="":
+                    if lesson['resumen'] =='':
                         lesson['resumen']=htmlFiletext
                     else:
-                        lesson['objetivos']=htmlFiletext                    
-                if child.tag=="video":
+                        lesson['resumen'] += htmlFiletext                        
+                else:
+                    if lesson['objetivos']=='':
+                        lesson['objetivos'] = htmlFiletext                    
+                    else:
+                        lesson['objetivos'] += htmlFiletext                                                            
+            if child.tag=="video":
+                if lesson['video']=='':
                     videoXML = etree.parse(originFolder+'/video/'+child.attrib['url_name']+'.xml').getroot()
                     lesson["video"]=videoXML.attrib['youtube_id_1_0']
-                if child.tag=="discussion":
-                    lesson["forum"]="1"
-                if child.tag=="problem":
-                    writeproblem(originFolder,cfg,wb,child.attrib,lesson)
-                    
+                else:       
+                    lesson["lesson"]=unicode(numChapter)+":"+unicode(numSequential)+":" + unicode(lessonNumber) + ":"+lesson['titulo']             
+                    writeLesson(lesson,cfg,wb)
+                    lessonNumber += 1
+                    lesson = dict(lesson)
+                    videoXML = etree.parse(originFolder+'/video/'+child.attrib['url_name']+'.xml').getroot()
+                    lesson["video"]=videoXML.attrib['youtube_id_1_0']
+                    lesson['resumen']=''
+                    lesson['ovjetivos']=''                    
+            if child.tag=="discussion":
+                if lesson['forum']=='':
+                    lesson["forum"]="1"                
+            if child.tag=="problem":           
+                #may need to check where this belong     
+                lesson["lesson"]=unicode(numChapter)+":"+unicode(numSequential)+":" + unicode(lessonNumber) + ":"+lesson['titulo']
+                writeproblem(originFolder,cfg,wb,child.attrib,lesson)
+    if lesson != lessonTemplate:
+        lesson["lesson"]=unicode(numChapter)+":"+unicode(numSequential)+":" + unicode(lessonNumber) + ":"+lesson['titulo']
+        writeLesson(lesson,cfg,wb)
+    
+    lessonRow = wb['Leccion'].max_row
+    for val in wb['Leccion'].data_validations.dataValidation:        
+        val.sqref=openpyxl.worksheet.cell_range.MultiCellRange([unicode(val.sqref)[:1]+'2:'+unicode(val.sqref)[:1]+unicode(lessonRow)])        
+    return wb
+
+def writeLesson(lesson,cfg,wb):   
     if wb['Leccion'].max_row==2 and wb['Leccion']['B2'].value==None:
         lessonRow=2
     else:
         lessonRow = wb['Leccion'].max_row +1 
-
-    #TODO - change letters with columnnames in cfg file
     wb['Leccion'][cfg['LECCION']['NOMBRESECCIONCOL'] + unicode(lessonRow)].value=lesson['seccion']
     wb['Leccion'][cfg['LECCION']['NOMBRESUBSECCIONCOL'] + unicode(lessonRow)].value=lesson['subseccion']
     wb['Leccion'][cfg['LECCION']['TITULOCOL'] + unicode(lessonRow)].value=lesson['titulo']
@@ -260,12 +285,9 @@ def writeSequential(originFolder,attributes,cfg,wb,chapterAttrib,numChapter,numS
     wb['Leccion'][cfg['LECCION']['FORMULASUBSECCIONCOL'] + unicode(lessonRow)].value=u'=INDEX(Unidades[],MATCH(Leccion[[#This Row],[SubSecci\xf3n]],Unidades[selectorSubSeccion],0),4)'
     wb['Leccion'][cfg['LECCION']['FORMULALESSONCOL'] + unicode(lessonRow)].value='=IFERROR((IF(AND(A' + unicode(lessonRow-1) + '=A' + unicode(lessonRow) + ',C' + unicode(lessonRow-1) + '=C' + unicode(lessonRow) + '),E' + unicode(lessonRow-1) + '+1,1)),"")'
     wb['Leccion'][cfg['LECCION']['FORMULACONCATCOL'] + unicode(lessonRow)].value=u'=CONCATENATE(INDIRECT("Leccion[idSeccion]"),":",INDIRECT("Leccion[idSubSeccion]"),":",INDIRECT("Leccion[Lecci\xf3n]"),":",INDIRECT("Leccion[Titulo]"))'
-
-    wb['Leccion']._tables[0].ref = cfg['LECCION']['TABLEDEF'] + unicode(lessonRow)   
     
-    for val in wb['Leccion'].data_validations.dataValidation:
-        val.sqref=openpyxl.worksheet.cell_range.MultiCellRange([unicode(val.sqref)[:1]+'2:'+unicode(val.sqref)[:1]+unicode(lessonRow)])        
-    return wb
+    wb['Leccion']._tables[0].ref = cfg['LECCION']['TABLEDEF'] + unicode(lessonRow)
+
 
 def updateUnidades(originFolder,attributes,cfg,wb):
     '''
@@ -273,11 +295,11 @@ def updateUnidades(originFolder,attributes,cfg,wb):
     luego mirar el archivo xml que esta enlazado en cada uno de los sequentials y sacar el displayname de la subsection    
     '''
     courseXML =etree.parse(originFolder+'/course/'+attributes['url_name']+'.xml').getroot()    
-    numChapter = 1
+    numChapter = 1    
     for chapter in courseXML.cssselect('chapter'):
         chapterXML = etree.parse(originFolder+'/chapter/'+chapter.attrib['url_name']+'.xml').getroot()
-        numSequential = 1
-        for sequential in chapterXML.cssselect('sequential'):
+        numSequential = 1        
+        for sequential in chapterXML.cssselect('sequential'):                        
             wb = writeSequential(originFolder,sequential.attrib,cfg,wb,chapterXML.attrib,numChapter,numSequential)            
             numSequential +=1
         numChapter +=1
@@ -319,8 +341,9 @@ parser.add_argument('--p', dest='path',default=None,help='the origin folder wher
 args = parser.parse_args()
 cfg = json.loads(open("conf.json").read())
 if args.file!=None:    
-    cfg["TEMPLATEPATH"]=args.file
+    cfg["FILENAME"]=args.file
 if args.path!=None:    
     cfg['ORIGINFOLDER']=args.path
+
 generate_XNF(cfg)
 
